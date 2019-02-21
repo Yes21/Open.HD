@@ -107,15 +107,41 @@ static int open_sock (char *ifname) {
     return sock;
 }
 
+/* from @svpcom : this is the template radiotap header we send packets out with */
 
+
+#define IEEE80211_RADIOTAP_MCS_HAVE_BW    0x01
+#define IEEE80211_RADIOTAP_MCS_HAVE_MCS   0x02
+#define IEEE80211_RADIOTAP_MCS_HAVE_GI    0x04
+#define IEEE80211_RADIOTAP_MCS_HAVE_FMT   0x08
+
+#define IEEE80211_RADIOTAP_MCS_BW_20    0
+#define IEEE80211_RADIOTAP_MCS_BW_40    1
+#define IEEE80211_RADIOTAP_MCS_BW_20L   2
+#define IEEE80211_RADIOTAP_MCS_BW_20U   3
+#define IEEE80211_RADIOTAP_MCS_SGI      0x04
+#define IEEE80211_RADIOTAP_MCS_FMT_GF   0x08
+
+#define IEEE80211_RADIOTAP_MCS_HAVE_FEC   0x10
+#define IEEE80211_RADIOTAP_MCS_HAVE_STBC  0x20
+#define IEEE80211_RADIOTAP_MCS_FEC_LDPC   0x10
+#define	IEEE80211_RADIOTAP_MCS_STBC_MASK  0x60
+#define	IEEE80211_RADIOTAP_MCS_STBC_1  1
+#define	IEEE80211_RADIOTAP_MCS_STBC_2  2
+#define	IEEE80211_RADIOTAP_MCS_STBC_3  3
+#define	IEEE80211_RADIOTAP_MCS_STBC_SHIFT 5
+
+#define MCS_FLAGS  (IEEE80211_RADIOTAP_MCS_BW_20 | (IEEE80211_RADIOTAP_MCS_STBC_1 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT) | IEEE80211_RADIOTAP_MCS_FEC_LDPC)
+
+// Default is MCS#1 -- QPSK 1/2 40MHz SGI -- 30 Mbit/s
+// MCS_FLAGS = (IEEE80211_RADIOTAP_MCS_BW_40 | IEEE80211_RADIOTAP_MCS_SGI | (IEEE80211_RADIOTAP_MCS_STBC_1 << IEEE80211_RADIOTAP_MCS_STBC_SHIFT))
 
 static u8 u8aRadiotapHeader[] = {
-	0x00, 0x00, // <-- radiotap version
-	0x0c, 0x00, // <- radiotap header length
-	0x04, 0x80, 0x00, 0x00, // <-- radiotap present flags (rate + tx flags)
-	0x00, // datarate (will be overwritten later in packet_header_init)
-	0x00, // ??
-	0x00, 0x00 // ??
+	 0x00, 0x00, // <-- radiotap version
+    0x0d, 0x00, // <- radiotap header length
+    0x00, 0x80, 0x08, 0x00, // <-- radiotap present flags:  RADIOTAP_TX_FLAGS + RADIOTAP_MCS
+    0x08, 0x00,  // RADIOTAP_F_TX_NOACK
+    MCS_KNOWN , 0x00, 0x00 // bitmap, flags, mcs_index
 };
 
 static u8 u8aIeeeHeader_data_short[] = {
